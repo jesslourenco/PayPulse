@@ -17,3 +17,6 @@ type Transaction struct {
 	Amount        float32   `json:"amount"`
 	IsConsumed    bool      `json:"isConsumed"`
 }
+
+var Accounts = make(map[string]*Account)
+var Transactions = make(map[string]*Transaction)
