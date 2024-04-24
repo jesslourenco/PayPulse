@@ -2,7 +2,7 @@ FROM golang:1.22
 
 WORKDIR /app
 
-COPY cmd/PayPulse/main.go .
+COPY cmd/gopay/main.go .
 COPY go.mod .
 RUN go mod download
 RUN go build -o api

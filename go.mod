@@ -1,3 +1,3 @@
-module github.com/paypulse
+module github.com/gopay
 
 go 1.22
