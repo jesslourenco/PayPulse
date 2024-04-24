@@ -1,2 +1,2 @@
 build:
-	go build -o ./bin/paypulse cmd/PayPulse/main.go
+	go build -o ./bin/gopay cmd/gopay/main.go
