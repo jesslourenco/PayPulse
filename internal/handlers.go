@@ -2,15 +2,24 @@ package internal
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "Welcome to GoPay!")
+	w.Header().Set("Content-Type", "application/json; charset=UTF8")
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode("Welcome to GoPay!")
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
+		return
+	}
 }
 
 func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -20,13 +29,12 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		accs = append(accs, account)
 	}
 
-	response := &JsonResponse{Data: &accs}
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
-	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode(&accs)
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusNotFound, Title: "Internal Server Error"}})
+		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
 		return
 	}
 }
@@ -35,8 +43,6 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	id := params.ByName("account-id")
 
 	account, found := Accounts[id]
-	response := &JsonResponse{Data: &account}
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 
 	if !found {
@@ -44,17 +50,26 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusNotFound, Title: "Account Not Found"}})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	err := json.NewEncoder(w).Encode(&account)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusNotFound, Title: "Internal Server Error"}})
+		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
+		return
 	}
 }
 func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	account := &Account{}
+	id := params.ByName("account-id")
+	_, found := Accounts[id]
 
-	account.AccountId = params.ByName("account-id")
+	if found {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusBadRequest, Title: "Bad Request: Cannot create new account with this id"}})
+		return
+	}
+
+	account := &Account{}
+	account.AccountId = id
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
@@ -72,10 +87,8 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	fmt.Printf("%#v \n", account)
+	log.Printf("%#v \n", account)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
-
 	Accounts[account.AccountId] = account
-	w.WriteHeader(http.StatusOK)
 }

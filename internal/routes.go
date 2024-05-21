@@ -3,7 +3,6 @@ package internal
 import "github.com/julienschmidt/httprouter"
 
 type Route struct {
-	Name        string
 	Method      string
 	Path        string
 	HandlerFunc httprouter.Handle
@@ -11,9 +10,9 @@ type Route struct {
 
 func Routes() []Route {
 	return []Route{
-		{"Index", "GET", "/", Index},
-		{"AccountIndex", "GET", "/accounts", GetAllAccounts},
-		{"Account", "GET", "/accounts/:account-id", GetAccount},
-		{"AccountPost", "POST", "/account/:account-id", PostAccount},
+		{"GET", "/", Index},
+		{"GET", "/accounts", GetAllAccounts},
+		{"GET", "/accounts/:account-id", GetAccount},
+		{"POST", "/account/:account-id", PostAccount},
 	}
 }
