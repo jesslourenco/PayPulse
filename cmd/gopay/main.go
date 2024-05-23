@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/gopay/internal"
 )
@@ -37,6 +39,12 @@ func initDB() {
 func main() {
 	router := internal.Router(internal.Routes())
 	initDB()
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Info().Msg("Server started at port :8080")
+
+	log.
+		Fatal().
+		Err(http.ListenAndServe(":8080", router)).
+		Msg("Server closed")
 }

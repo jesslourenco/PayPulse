@@ -5,13 +5,13 @@ import (
 )
 
 type Account struct {
-	AccountId string `json:"account-id"`
+	AccountId string `json:"accountId"`
 	Name      string `json:"name"`
-	LastName  string `json:"lastname"`
+	LastName  string `json:"lastName"`
 }
 
 type Transaction struct {
-	TransactionId string    `json:"account-id"`
+	TransactionId string    `json:"accountId"`
 	ToAccount     string    `json:"receiver"`
 	CreatedAt     time.Time `json:"createdAt"`
 	Amount        float32   `json:"amount"`

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gopay/utils"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/julienschmidt/httprouter"
@@ -16,8 +18,9 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	err := json.NewEncoder(w).Encode("Welcome to GoPay!")
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Error().Err(err).Msg(err.Error())
+		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
@@ -33,8 +36,9 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	err := json.NewEncoder(w).Encode(&accs)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Error().Err(err).Msg(err.Error())
+		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
@@ -46,15 +50,18 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 
 	if !found {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusNotFound, Title: "Account Not Found"}})
+		msg := "Account Not Found"
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Info().Msg(msg)
+		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
 
 	err := json.NewEncoder(w).Encode(&account)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusInternalServerError, Title: "Internal Server Error"}})
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Error().Err(err).Msg(err.Error())
+		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
@@ -63,8 +70,10 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	_, found := Accounts[id]
 
 	if found {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusBadRequest, Title: "Bad Request: Cannot create new account with this id"}})
+		msg := "Cannot create new account with this id (duplicate)"
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Info().Msg(msg)
+		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
 		return
 	}
 
@@ -73,8 +82,9 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusBadRequest, Title: "Bad Request: failure when reading body"}})
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Error().Err(err).Msg(err.Error())
+		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -82,12 +92,11 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	err = json.Unmarshal(body, account)
 
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&JsonErrorResponse{Error: &ApiError{Status: http.StatusBadRequest, Title: "Bad Request: failure when converting to entity"}})
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Error().Err(err).Msg(err.Error())
+		utils.ErrorWithMessage(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-
-	log.Printf("%#v \n", account)
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 	Accounts[account.AccountId] = account
