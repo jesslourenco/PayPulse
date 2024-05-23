@@ -1,9 +1,10 @@
 package internal
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/gopay/utils"
 	"github.com/rs/zerolog"
@@ -14,8 +15,8 @@ import (
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
-	w.WriteHeader(http.StatusOK)
-	err := json.NewEncoder(w).Encode("Welcome to GoPay!")
+
+	res, err := jsoniter.Marshal("Welcome to GoPay!")
 
 	if err != nil {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -23,6 +24,8 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	utils.WithPayload(w, http.StatusOK, res)
 }
 
 func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -32,8 +35,7 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		accs = append(accs, account)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF8")
-	err := json.NewEncoder(w).Encode(&accs)
+	res, err := jsoniter.Marshal(&accs)
 
 	if err != nil {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -41,13 +43,14 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	utils.WithPayload(w, http.StatusOK, res)
 }
 
 func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("account-id")
 
 	account, found := Accounts[id]
-	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 
 	if !found {
 		msg := "Account Not Found"
@@ -57,13 +60,14 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	err := json.NewEncoder(w).Encode(&account)
+	res, err := jsoniter.Marshal(&account)
 	if err != nil {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	utils.WithPayload(w, http.StatusOK, res)
 }
 func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("account-id")
@@ -89,7 +93,7 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	}
 
 	defer r.Body.Close()
-	err = json.Unmarshal(body, account)
+	err = jsoniter.Unmarshal(body, &account)
 
 	if err != nil {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -98,6 +102,6 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 	Accounts[account.AccountId] = account
+	utils.WithPayload(w, http.StatusCreated, nil)
 }
