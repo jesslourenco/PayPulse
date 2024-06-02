@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -10,7 +11,7 @@ import (
 )
 
 func initDB() {
-	// temp fake db for accounts
+	// temp fake db for accounts and transactions
 	internal.Accounts["0001"] = &internal.Account{
 		AccountId: "0001",
 		Name:      "Shankar",
@@ -33,6 +34,26 @@ func initDB() {
 		AccountId: "0004",
 		Name:      "Karina",
 		LastName:  "Domingues",
+	}
+
+	internal.Transactions["1000000"] = &internal.Transaction{
+		TransactionId: "1000000",
+		Owner:         "0001",
+		Sender:        "0001",
+		Receiver:      "0001",
+		CreatedAt:     time.Now(),
+		Amount:        7000.00,
+		IsConsumed:    false,
+	}
+
+	internal.Transactions["2000000"] = &internal.Transaction{
+		TransactionId: "2000000",
+		Owner:         "0002",
+		Sender:        "0002",
+		Receiver:      "0002",
+		CreatedAt:     time.Now(),
+		Amount:        3000.00,
+		IsConsumed:    false,
 	}
 }
 

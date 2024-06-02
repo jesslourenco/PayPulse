@@ -11,11 +11,18 @@ type Account struct {
 }
 
 type Transaction struct {
-	TransactionId string    `json:"accountId"`
-	ToAccount     string    `json:"receiver"`
+	TransactionId string    `json:"transactionId"`
+	Owner         string    `json:"owner"`
+	Sender        string    `json:"sender"`
+	Receiver      string    `json:"receiver"`
 	CreatedAt     time.Time `json:"createdAt"`
 	Amount        float32   `json:"amount"`
 	IsConsumed    bool      `json:"isConsumed"`
+}
+
+type Balance struct {
+	AccountId string  `json:"accountId"`
+	Amount    float64 `json:"balance"`
 }
 
 var Accounts = make(map[string]*Account)
