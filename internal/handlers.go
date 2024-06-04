@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gopay/internal/models"
+	"github.com/gopay/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/gopay/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -30,9 +31,9 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	accs := []*Account{}
+	accs := []*models.Account{}
 
-	for _, account := range Accounts {
+	for _, account := range models.Accounts {
 		accs = append(accs, account)
 	}
 
@@ -51,7 +52,7 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("account-id")
 
-	account, found := Accounts[id]
+	account, found := models.Accounts[id]
 
 	if !found {
 		msg := "Account Not Found"
@@ -73,7 +74,7 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("account-id")
-	_, found := Accounts[id]
+	_, found := models.Accounts[id]
 
 	if found {
 		msg := "Cannot create new account with this id (duplicate)"
@@ -83,7 +84,7 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	account := &Account{}
+	account := &models.Account{}
 	account.AccountId = id
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
@@ -104,16 +105,16 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	Accounts[account.AccountId] = account
+	models.Accounts[account.AccountId] = account
 	utils.WithPayload(w, http.StatusCreated, nil)
 }
 
 func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	transactions := []*Transaction{}
+	transactions := []*models.Transaction{}
 
 	accountId := params.ByName("account-id")
 
-	_, found := Accounts[accountId]
+	_, found := models.Accounts[accountId]
 
 	if !found {
 		msg := "Account Not Found"
@@ -123,8 +124,8 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 		return
 	}
 
-	for _, transaction := range Transactions {
-		if transaction.Sender == accountId {
+	for _, transaction := range models.Transactions {
+		if transaction.Owner == accountId {
 			transactions = append(transactions, transaction)
 		}
 	}
@@ -144,7 +145,7 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("transaction-id")
 
-	transaction, found := Transactions[id]
+	transaction, found := models.Transactions[id]
 
 	if !found {
 		msg := "Transaction Not Found"
@@ -166,7 +167,7 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 
 func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("transaction-id")
-	_, found := Transactions[id]
+	_, found := models.Transactions[id]
 
 	if found {
 		msg := "Cannot create new transaction with this id (duplicate)"
@@ -176,7 +177,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	transaction := &Transaction{}
+	transaction := &models.Transaction{}
 	transaction.TransactionId = id
 	transaction.CreatedAt = time.Now()
 	transaction.IsConsumed = false
@@ -199,7 +200,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	_, found = Accounts[transaction.Receiver]
+	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Receiver Account Not Found"
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -208,7 +209,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	_, found = Accounts[transaction.Receiver]
+	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Sender Account Not Found"
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -217,16 +218,44 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	Transactions[transaction.TransactionId] = transaction
-	utils.WithPayload(w, http.StatusCreated, nil)
+	transaction.Owner = transaction.Sender
+	var success bool
 
-	// TODO: Add account balance validation
+	if transaction.Sender == transaction.Receiver {
+		if transaction.Amount > 0 {
+			success = utils.Deposit(transaction)
+		} else {
+			success = utils.Withdrawal(transaction)
+		}
+
+		if !success {
+			msg := "Insufficient Balance"
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+			log.Info().Msg(msg)
+			utils.ErrorWithMessage(w, http.StatusForbidden, msg)
+			return
+		}
+
+		utils.WithPayload(w, http.StatusCreated, nil)
+		return
+	}
+
+	success = utils.Pay(transaction)
+	if !success {
+		msg := "Insufficient Balance"
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		log.Info().Msg(msg)
+		utils.ErrorWithMessage(w, http.StatusForbidden, msg)
+		return
+	}
+
+	utils.WithPayload(w, http.StatusCreated, nil)
 }
 
 func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("account-id")
 
-	_, found := Accounts[id]
+	_, found := models.Accounts[id]
 
 	if !found {
 		msg := "Account Not Found"
@@ -236,12 +265,12 @@ func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 
-	balance := Balance{
+	balance := models.Balance{
 		AccountId: id,
 		Amount:    0.00,
 	}
 
-	for _, transaction := range Transactions {
+	for _, transaction := range models.Transactions {
 		if transaction.Owner == id && !transaction.IsConsumed {
 			balance.Amount += float64(transaction.Amount)
 		}
