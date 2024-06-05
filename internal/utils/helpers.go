@@ -3,11 +3,10 @@ package utils
 import (
 	"encoding/json"
 	"math"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gopay/internal/models"
 )
 
@@ -36,7 +35,14 @@ func Deposit(transaction *models.Transaction) bool {
 }
 
 func Withdrawal(transaction *models.Transaction) bool {
-	return Debit(transaction)
+	if !Debit(transaction) {
+		return false
+	}
+
+	transaction.IsConsumed = true
+	models.Transactions[transaction.TransactionId] = transaction
+
+	return true
 }
 
 func Pay(transaction *models.Transaction) bool {
@@ -58,25 +64,24 @@ func Debit(transaction *models.Transaction) bool {
 
 	for _, t := range models.Transactions {
 		if t.Owner == transaction.Owner && !t.IsConsumed {
-			balance += float64(transaction.Amount)
+			balance += float64(t.Amount)
 			if oldest == nil || t.CreatedAt.Before(oldest.CreatedAt) {
 				oldest = t
 			}
 		}
 	}
 
-	if balance+float64(transaction.Amount) < 0 {
+	if (balance + float64(transaction.Amount)) < 0 {
 		return false
 	}
 
 	oldest.IsConsumed = true
 
 	if (oldest.Amount + transaction.Amount) != 0 {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		id := r.Int63()
+		id := GetTransactionUUID()
 
 		new := &models.Transaction{
-			TransactionId: strconv.FormatInt(id, 10),
+			TransactionId: id,
 			Owner:         transaction.Owner,
 			Sender:        transaction.Owner,
 			Receiver:      transaction.Owner,
@@ -91,11 +96,9 @@ func Debit(transaction *models.Transaction) bool {
 }
 
 func Credit(transaction *models.Transaction) {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	id := r.Int63()
-
+	id := GetTransactionUUID()
 	t := &models.Transaction{
-		TransactionId: strconv.FormatInt(id, 10),
+		TransactionId: id,
 		Owner:         transaction.Receiver,
 		Sender:        transaction.Owner,
 		Receiver:      transaction.Receiver,
@@ -104,4 +107,28 @@ func Credit(transaction *models.Transaction) {
 		IsConsumed:    false,
 	}
 	models.Transactions[t.TransactionId] = t
+}
+
+func GetAccountUUID() string {
+	id := uuid.NewString()
+
+	_, found := models.Accounts[id]
+	for found {
+		id = uuid.NewString()
+		_, found = models.Accounts[id]
+	}
+
+	return id
+}
+
+func GetTransactionUUID() string {
+	id := uuid.NewString()
+
+	_, found := models.Transactions[id]
+	for found {
+		id = uuid.NewString()
+		_, found = models.Transactions[id]
+	}
+
+	return id
 }

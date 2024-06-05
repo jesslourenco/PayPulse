@@ -77,16 +77,8 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	utils.WithPayload(w, http.StatusOK, res)
 }
 
-func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName(AccountIdParam)
-	_, found := models.Accounts[id]
-
-	if found {
-		msg := "Cannot create new account with this id (duplicate)"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
-		return
-	}
+func PostAccount(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	id := utils.GetAccountUUID()
 
 	account := &models.Account{}
 	account.AccountId = id
@@ -160,16 +152,8 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 	utils.WithPayload(w, http.StatusOK, res)
 }
 
-func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName(TransactionIdParam)
-	_, found := models.Transactions[id]
-
-	if found {
-		msg := "Cannot create new transaction with this id (duplicate)"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
-		return
-	}
+func PostTransaction(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	id := utils.GetTransactionUUID()
 
 	transaction := &models.Transaction{}
 	transaction.TransactionId = id
@@ -192,7 +176,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	_, found = models.Accounts[transaction.Receiver]
+	_, found := models.Accounts[transaction.Receiver]
 	if !found {
 		log.Error().Err(ErrReceiverNotFound).Msg("Handler::PostTransaction")
 		utils.ErrorWithMessage(w, http.StatusNotFound, ErrReceiverNotFound.Error())
