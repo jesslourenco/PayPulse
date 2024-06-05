@@ -15,6 +15,10 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+const AccountIdParam = "account-id"
+const TransactionIdParam = "transaction-id"
+const OneMegabyte = 1048576
+
 var ErrTransactionNotFound = errors.New("transaction not found")
 var ErrAccountNotFound = errors.New("account not found")
 var ErrReceiverNotFound = errors.New("receiver account not found")
@@ -54,7 +58,7 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 }
 
 func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("account-id")
+	id := params.ByName(AccountIdParam)
 
 	account, found := models.Accounts[id]
 
@@ -74,7 +78,7 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 }
 
 func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("account-id")
+	id := params.ByName(AccountIdParam)
 	_, found := models.Accounts[id]
 
 	if found {
@@ -87,7 +91,7 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	account := &models.Account{}
 	account.AccountId = id
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
+	body, err := io.ReadAll(io.LimitReader(r.Body, OneMegabyte))
 	if err != nil {
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
@@ -110,7 +114,7 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	transactions := []*models.Transaction{}
 
-	accountId := params.ByName("account-id")
+	accountId := params.ByName(AccountIdParam)
 
 	_, found := models.Accounts[accountId]
 
@@ -137,7 +141,7 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 }
 
 func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("transaction-id")
+	id := params.ByName(TransactionIdParam)
 
 	transaction, found := models.Transactions[id]
 
@@ -157,7 +161,7 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 }
 
 func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("transaction-id")
+	id := params.ByName(TransactionIdParam)
 	_, found := models.Transactions[id]
 
 	if found {
@@ -172,7 +176,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	transaction.CreatedAt = time.Now()
 	transaction.IsConsumed = false
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
+	body, err := io.ReadAll(io.LimitReader(r.Body, OneMegabyte))
 	if err != nil {
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
@@ -233,7 +237,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 }
 
 func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("account-id")
+	id := params.ByName(AccountIdParam)
 
 	_, found := models.Accounts[id]
 
