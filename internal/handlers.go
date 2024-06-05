@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -14,7 +15,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-const transactionIdParam = "transaction-id"
+var ErrTransactionNotFound = errors.New("transaction not found")
+var ErrAccountNotFound = errors.New("account not found")
+var ErrReceiverNotFound = errors.New("receiver account not found")
+var ErrSenderNotFound = errors.New("sender account not found")
+var ErrInsufficentBalance = errors.New("insufficient balance")
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
@@ -54,9 +59,8 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	account, found := models.Accounts[id]
 
 	if !found {
-		msg := "Account Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrAccountNotFound).Msg("Handler::GetAccount")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrAccountNotFound.Error())
 		return
 	}
 
@@ -111,9 +115,8 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 	_, found := models.Accounts[accountId]
 
 	if !found {
-		msg := "Account Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrAccountNotFound).Msg("Handler::GetAllTransactions")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrAccountNotFound.Error())
 		return
 	}
 
@@ -134,14 +137,13 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 }
 
 func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName(transactionIdParam)
+	id := params.ByName("transaction-id")
 
 	transaction, found := models.Transactions[id]
 
 	if !found {
-		msg := "Transaction Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrTransactionNotFound).Msg("Handler::GetTransaction")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrTransactionNotFound.Error())
 		return
 	}
 
@@ -155,7 +157,7 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 }
 
 func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName(transactionIdParam)
+	id := params.ByName("transaction-id")
 	_, found := models.Transactions[id]
 
 	if found {
@@ -188,17 +190,15 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
-		msg := "Receiver Account Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrReceiverNotFound).Msg("Handler::PostTransaction")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrReceiverNotFound.Error())
 		return
 	}
 
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
-		msg := "Sender Account Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrSenderNotFound).Msg("Handler::PostTransaction")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrSenderNotFound.Error())
 		return
 	}
 
@@ -213,9 +213,8 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		}
 
 		if !success {
-			msg := "Insufficient Balance"
-			log.Error().Msg(msg)
-			utils.ErrorWithMessage(w, http.StatusForbidden, msg)
+			log.Error().Err(ErrInsufficentBalance).Msg("Handler::PostTransaction")
+			utils.ErrorWithMessage(w, http.StatusForbidden, ErrInsufficentBalance.Error())
 			return
 		}
 
@@ -225,9 +224,8 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 	success = utils.Pay(transaction)
 	if !success {
-		msg := "Insufficient Balance"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusForbidden, msg)
+		log.Error().Err(ErrInsufficentBalance).Msg("Handler::PostTransaction")
+		utils.ErrorWithMessage(w, http.StatusForbidden, ErrInsufficentBalance.Error())
 		return
 	}
 
@@ -240,9 +238,8 @@ func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	_, found := models.Accounts[id]
 
 	if !found {
-		msg := "Account Not Found"
-		log.Error().Msg(msg)
-		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
+		log.Error().Err(ErrAccountNotFound).Msg("Handler::GetBalance")
+		utils.ErrorWithMessage(w, http.StatusNotFound, ErrAccountNotFound.Error())
 		return
 	}
 
