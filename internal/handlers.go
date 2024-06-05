@@ -75,7 +75,7 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	if found {
 		msg := "Cannot create new account with this id (duplicate)"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
 		return
 	}
@@ -112,7 +112,7 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 
 	if !found {
 		msg := "Account Not Found"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
@@ -140,7 +140,7 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 
 	if !found {
 		msg := "Transaction Not Found"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
@@ -160,7 +160,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 	if found {
 		msg := "Cannot create new transaction with this id (duplicate)"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
 		return
 	}
@@ -189,7 +189,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Receiver Account Not Found"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
@@ -197,7 +197,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Sender Account Not Found"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
@@ -214,8 +214,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 		if !success {
 			msg := "Insufficient Balance"
-
-			log.Info().Msg(msg)
+			log.Error().Msg(msg)
 			utils.ErrorWithMessage(w, http.StatusForbidden, msg)
 			return
 		}
@@ -227,8 +226,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	success = utils.Pay(transaction)
 	if !success {
 		msg := "Insufficient Balance"
-
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusForbidden, msg)
 		return
 	}
@@ -243,7 +241,7 @@ func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	if !found {
 		msg := "Account Not Found"
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
