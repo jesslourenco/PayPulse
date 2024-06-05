@@ -9,7 +9,6 @@ import (
 	"github.com/gopay/internal/utils"
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/julienschmidt/httprouter"
@@ -23,7 +22,6 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res, err := jsoniter.Marshal("Welcome to GoPay!")
 
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -42,7 +40,6 @@ func GetAllAccounts(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	res, err := jsoniter.Marshal(&accs)
 
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -58,7 +55,6 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	if !found {
 		msg := "Account Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -66,7 +62,6 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	res, err := jsoniter.Marshal(&account)
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -80,7 +75,6 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	if found {
 		msg := "Cannot create new account with this id (duplicate)"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
 		return
@@ -91,7 +85,6 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -101,7 +94,6 @@ func PostAccount(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	err = jsoniter.Unmarshal(body, &account)
 
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusUnprocessableEntity, err.Error())
 		return
@@ -120,7 +112,6 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 
 	if !found {
 		msg := "Account Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -134,7 +125,6 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 
 	res, err := jsoniter.Marshal(&transactions)
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -150,7 +140,6 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 
 	if !found {
 		msg := "Transaction Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -158,7 +147,6 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 
 	res, err := jsoniter.Marshal(&transaction)
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -172,7 +160,6 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 	if found {
 		msg := "Cannot create new transaction with this id (duplicate)"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusBadRequest, msg)
 		return
@@ -185,7 +172,6 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
@@ -195,7 +181,6 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	err = jsoniter.Unmarshal(body, &transaction)
 
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusUnprocessableEntity, err.Error())
 		return
@@ -204,7 +189,6 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Receiver Account Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -213,7 +197,6 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	_, found = models.Accounts[transaction.Receiver]
 	if !found {
 		msg := "Sender Account Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -231,7 +214,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 		if !success {
 			msg := "Insufficient Balance"
-			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 			log.Info().Msg(msg)
 			utils.ErrorWithMessage(w, http.StatusForbidden, msg)
 			return
@@ -244,7 +227,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 	success = utils.Pay(transaction)
 	if !success {
 		msg := "Insufficient Balance"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusForbidden, msg)
 		return
@@ -260,7 +243,6 @@ func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	if !found {
 		msg := "Account Not Found"
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Info().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
@@ -279,7 +261,6 @@ func GetBalance(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	res, err := jsoniter.Marshal(&balance)
 	if err != nil {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
 		return
