@@ -133,7 +133,6 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 	}
 
 	res, err := jsoniter.Marshal(&transactions)
-
 	if err != nil {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 		log.Error().Err(err).Msg(err.Error())
