@@ -15,6 +15,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+const transactionIdParam = "transaction-id"
+
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 
@@ -57,7 +59,7 @@ func GetAccount(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	if !found {
 		msg := "Account Not Found"
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-		log.Info().Msg(msg)
+		log.Error().Msg(msg)
 		utils.ErrorWithMessage(w, http.StatusNotFound, msg)
 		return
 	}
@@ -143,7 +145,7 @@ func GetAllTransactions(w http.ResponseWriter, r *http.Request, params httproute
 }
 
 func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("transaction-id")
+	id := params.ByName(transactionIdParam)
 
 	transaction, found := models.Transactions[id]
 
@@ -166,7 +168,7 @@ func GetTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 }
 
 func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("transaction-id")
+	id := params.ByName(transactionIdParam)
 	_, found := models.Transactions[id]
 
 	if found {
