@@ -199,7 +199,7 @@ func PostTransaction(w http.ResponseWriter, r *http.Request, params httprouter.P
 		return
 	}
 
-	_, found = models.Accounts[transaction.Receiver]
+	_, found = models.Accounts[transaction.Sender]
 	if !found {
 		log.Error().Err(ErrSenderNotFound).Msg("Handler::PostTransaction")
 		utils.ErrorWithMessage(w, http.StatusNotFound, ErrSenderNotFound.Error())
