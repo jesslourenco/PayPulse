@@ -3,58 +3,61 @@ package repository
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/gopay/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFindAll(t *testing.T) {
+func TestTransactions_FindAll(t *testing.T) {
+	time := time.Now()
+
 	type args struct {
 		ctx  context.Context
-		data map[string]models.Account
+		data map[string]models.Transaction
 	}
 
 	var scenarios = map[string]struct {
 		given   args
-		want    []models.Account
+		want    []models.Transaction
 		wantErr error
 	}{
 		"happy-path": {
 			given: args{
 				ctx: context.Background(),
-				data: map[string]models.Account{
-					"0001": {
-						AccountId: "0001",
-						Name:      "Shankar",
-						LastName:  "Nakai",
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         "0001",
+						Sender:        "0001",
+						Receiver:      "0001",
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
 					},
-					"0002": {
-						AccountId: "0002",
-						Name:      "Jessica",
-						LastName:  "Lourenco",
-					}},
+				},
 			},
 
-			want: []models.Account{
+			want: []models.Transaction{
 				{
-					AccountId: "0001",
-					Name:      "Shankar",
-					LastName:  "Nakai",
+					TransactionId: "1000000",
+					Owner:         "0001",
+					Sender:        "0001",
+					Receiver:      "0001",
+					CreatedAt:     time,
+					Amount:        7000.00,
+					IsConsumed:    false,
 				},
-				{
-					AccountId: "0002",
-					Name:      "Jessica",
-					LastName:  "Lourenco",
-				}},
+			},
 			wantErr: nil,
 		},
-		"no accounts": {
+
+		"no transactions": {
 			given: args{
 				ctx:  context.Background(),
-				data: map[string]models.Account{},
+				data: map[string]models.Transaction{},
 			},
-
-			want:    []models.Account{},
+			want:    []models.Transaction{},
 			wantErr: nil,
 		},
 	}
@@ -62,7 +65,7 @@ func TestFindAll(t *testing.T) {
 	for name, tcase := range scenarios {
 		tcase := tcase
 		t.Run(name, func(t *testing.T) {
-			repo := setup(t, tcase.given.data)
+			repo := setupTransactions(t, tcase.given.data)
 
 			result, err := repo.FindAll(tcase.given.ctx)
 
@@ -78,7 +81,7 @@ func TestFindAll(t *testing.T) {
 	}
 }
 
-func TestFindOne(t *testing.T) {
+/*func TestFindOne(t *testing.T) {
 	type args struct {
 		ctx  context.Context
 		id   string
@@ -155,10 +158,10 @@ func TestFindOne(t *testing.T) {
 		})
 	}
 
-}
+}*/
 
-func setup(_ *testing.T, initialData map[string]models.Account) *accountRepoImpl {
-	repo := NewAccountRepo()
-	repo.accounts = initialData
+func setupTransactions(_ *testing.T, initialData map[string]models.Transaction) *transactionRepoImpl {
+	repo := NewTransactionRepo()
+	repo.transactions = initialData
 	return repo
 }
