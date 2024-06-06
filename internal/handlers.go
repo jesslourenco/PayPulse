@@ -15,15 +15,19 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-const AccountIdParam = "account-id"
-const TransactionIdParam = "transaction-id"
-const OneMegabyte = 1048576
+const (
+	AccountIdParam     = "account-id"
+	TransactionIdParam = "transaction-id"
+	OneMegabyte        = 1048576
+)
 
-var ErrTransactionNotFound = errors.New("transaction not found")
-var ErrAccountNotFound = errors.New("account not found")
-var ErrReceiverNotFound = errors.New("receiver account not found")
-var ErrSenderNotFound = errors.New("sender account not found")
-var ErrInsufficentBalance = errors.New("insufficient balance")
+var (
+	ErrTransactionNotFound = errors.New("transaction not found")
+	ErrAccountNotFound     = errors.New("account not found")
+	ErrReceiverNotFound    = errors.New("receiver account not found")
+	ErrSenderNotFound      = errors.New("sender account not found")
+	ErrInsufficentBalance  = errors.New("insufficient balance")
+)
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
