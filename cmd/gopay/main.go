@@ -2,37 +2,59 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/gopay/internal"
+	"github.com/gopay/internal/models"
 )
 
 func initDB() {
-	// temp fake db for accounts
-	internal.Accounts["0001"] = &internal.Account{
+	// temp fake db for accounts and transactions
+	models.Accounts["0001"] = &models.Account{
 		AccountId: "0001",
 		Name:      "Shankar",
 		LastName:  "Nakai",
 	}
 
-	internal.Accounts["0002"] = &internal.Account{
+	models.Accounts["0002"] = &models.Account{
 		AccountId: "0002",
 		Name:      "Jessica",
 		LastName:  "Lourenco",
 	}
 
-	internal.Accounts["0003"] = &internal.Account{
+	models.Accounts["0003"] = &models.Account{
 		AccountId: "0003",
 		Name:      "Caio",
 		LastName:  "Henrique",
 	}
 
-	internal.Accounts["0004"] = &internal.Account{
+	models.Accounts["0004"] = &models.Account{
 		AccountId: "0004",
 		Name:      "Karina",
 		LastName:  "Domingues",
+	}
+
+	models.Transactions["1000000"] = &models.Transaction{
+		TransactionId: "1000000",
+		Owner:         "0001",
+		Sender:        "0001",
+		Receiver:      "0001",
+		CreatedAt:     time.Now(),
+		Amount:        7000.00,
+		IsConsumed:    false,
+	}
+
+	models.Transactions["2000000"] = &models.Transaction{
+		TransactionId: "2000000",
+		Owner:         "0002",
+		Sender:        "0002",
+		Receiver:      "0002",
+		CreatedAt:     time.Now(),
+		Amount:        3000.00,
+		IsConsumed:    false,
 	}
 }
 

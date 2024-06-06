@@ -13,6 +13,10 @@ func Routes() []Route {
 		{"GET", "/", Index},
 		{"GET", "/accounts", GetAllAccounts},
 		{"GET", "/accounts/:account-id", GetAccount},
-		{"POST", "/account/:account-id", PostAccount},
+		{"POST", "/accounts", PostAccount},
+		{"GET", "/accounts/:account-id/transactions", GetAllTransactions},
+		{"GET", "/transactions/:transaction-id", GetTransaction},
+		{"POST", "/transactions", PostTransaction},
+		{"GET", "/accounts/:account-id/balance", GetBalance},
 	}
 }
