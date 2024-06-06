@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/gopay/internal/models"
+	"github.com/gopay/internal/utils"
 )
 
 var (
@@ -20,13 +21,13 @@ var _ TransactionRepo = (*transactionRepoImpl)(nil)
 
 type transactionRepoImpl struct {
 	transactions map[string]models.Transaction
-	transaction  models.Transaction
+	idGenerator  func() string
 }
 
 func NewTransactionRepo() *transactionRepoImpl {
 	return &transactionRepoImpl{
 		transactions: make(map[string]models.Transaction),
-		transaction:  models.Transaction{},
+		idGenerator:  utils.GetTransactionUUID,
 	}
 }
 
@@ -40,12 +41,12 @@ func (r *transactionRepoImpl) FindAll(_ context.Context) ([]models.Transaction, 
 	return transactions, nil
 }
 
-/*func (r *accountRepoImpl) FindOne(_ context.Context, id string) (models.Account, error) {
-	account, found := r.accounts[id]
+func (r *transactionRepoImpl) FindOne(_ context.Context, id string) (models.Transaction, error) {
+	transaction, found := r.transactions[id]
 
 	if !found {
-		return models.Account{}, ErrAccountNotFound
+		return models.Transaction{}, ErrTransactionNotFound
 	}
 
-	return account, nil
-}*/
+	return transaction, nil
+}

@@ -65,7 +65,7 @@ func TestTransactions_FindAll(t *testing.T) {
 	for name, tcase := range scenarios {
 		tcase := tcase
 		t.Run(name, func(t *testing.T) {
-			repo := setupTransactions(t, tcase.given.data)
+			repo := setupTransactions(t, tcase.given.data, nil)
 
 			result, err := repo.FindAll(tcase.given.ctx)
 
@@ -81,69 +81,75 @@ func TestTransactions_FindAll(t *testing.T) {
 	}
 }
 
-/*func TestFindOne(t *testing.T) {
+func TestTransactions_FindOne(t *testing.T) {
+	time := time.Now()
+
 	type args struct {
 		ctx  context.Context
 		id   string
-		data map[string]models.Account
+		data map[string]models.Transaction
 	}
 
 	var scenarios = map[string]struct {
 		given   args
-		want    models.Account
+		want    models.Transaction
 		wantErr error
 	}{
 		"happy-path": {
 			given: args{
 				ctx: context.Background(),
-				data: map[string]models.Account{
-					"0001": {
-						AccountId: "0001",
-						Name:      "Shankar",
-						LastName:  "Nakai",
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         "0001",
+						Sender:        "0001",
+						Receiver:      "0001",
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
 					},
-					"0002": {
-						AccountId: "0002",
-						Name:      "Jessica",
-						LastName:  "Lourenco",
-					}},
-				id: "0002",
+				},
+				id: "1000000",
 			},
 
-			want: models.Account{
-				AccountId: "0002",
-				Name:      "Jessica",
-				LastName:  "Lourenco",
+			want: models.Transaction{
+				TransactionId: "1000000",
+				Owner:         "0001",
+				Sender:        "0001",
+				Receiver:      "0001",
+				CreatedAt:     time,
+				Amount:        7000.00,
+				IsConsumed:    false,
 			},
 
 			wantErr: nil,
 		},
-		"account not found": {
+		"transaction not found": {
 			given: args{
 				ctx: context.Background(),
-				data: map[string]models.Account{
-					"0001": {
-						AccountId: "0001",
-						Name:      "Shankar",
-						LastName:  "Nakai",
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         "0001",
+						Sender:        "0001",
+						Receiver:      "0001",
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
 					},
-					"0002": {
-						AccountId: "0002",
-						Name:      "Jessica",
-						LastName:  "Lourenco",
-					}},
-				id: "0003",
+				},
+				id: "2000000",
 			},
 
-			want:    models.Account{},
-			wantErr: ErrAccountNotFound,
+			want:    models.Transaction{},
+			wantErr: ErrTransactionNotFound,
 		},
 	}
 
 	for name, tcase := range scenarios {
 		tcase := tcase
 		t.Run(name, func(t *testing.T) {
-			repo := setup(t, tcase.given.data)
+			repo := setupTransactions(t, tcase.given.data, nil)
 
 			result, err := repo.FindOne(tcase.given.ctx, tcase.given.id)
 
@@ -158,10 +164,11 @@ func TestTransactions_FindAll(t *testing.T) {
 		})
 	}
 
-}*/
+}
 
-func setupTransactions(_ *testing.T, initialData map[string]models.Transaction) *transactionRepoImpl {
+func setupTransactions(_ *testing.T, initialData map[string]models.Transaction, idGenerator func() string) *transactionRepoImpl {
 	repo := NewTransactionRepo()
 	repo.transactions = initialData
+	repo.idGenerator = idGenerator
 	return repo
 }
