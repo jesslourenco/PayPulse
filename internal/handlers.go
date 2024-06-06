@@ -33,7 +33,6 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF8")
 
 	res, err := jsoniter.Marshal("Welcome to GoPay!")
-
 	if err != nil {
 		log.Error().Err(err).Msg(err.Error())
 		utils.ErrorWithMessage(w, http.StatusInternalServerError, err.Error())
