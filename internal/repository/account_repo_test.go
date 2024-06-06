@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateAccount(t *testing.T) {
+func TestAccount_Create(t *testing.T) {
 	id := "0003"
 	idGenerator := func() string {
 		return id
@@ -94,7 +94,7 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
-func TestFindAll(t *testing.T) {
+func TestAccount_FindAll(t *testing.T) {
 	type args struct {
 		ctx  context.Context
 		data map[string]models.Account
@@ -164,7 +164,7 @@ func TestFindAll(t *testing.T) {
 	}
 }
 
-func TestFindOne(t *testing.T) {
+func TestAccount_FindOne(t *testing.T) {
 	type args struct {
 		ctx  context.Context
 		id   string
