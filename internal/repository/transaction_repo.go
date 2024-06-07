@@ -15,6 +15,7 @@ var (
 
 type TransactionRepo interface {
 	FindAll(ctx context.Context) ([]models.Transaction, error)
+	FindOne(ctx context.Context, id string) (models.Transaction, error)
 }
 
 var _ TransactionRepo = (*transactionRepoImpl)(nil)
