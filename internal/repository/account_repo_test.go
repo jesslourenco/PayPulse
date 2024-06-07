@@ -51,11 +51,53 @@ func TestAccount_Create(t *testing.T) {
 			},
 			wantErr: nil,
 		},
-		"missing params": {
+		"missing name": {
 			given: args{
 				ctx:      context.Background(),
 				name:     "",
 				lastname: "Henrique",
+				data: map[string]models.Account{
+					"0001": {
+						AccountId: "0001",
+						Name:      "Shankar",
+						LastName:  "Nakai",
+					},
+					"0002": {
+						AccountId: "0002",
+						Name:      "Jessica",
+						LastName:  "Lourenco",
+					}},
+			},
+
+			want:    models.Account{},
+			wantErr: ErrMissingParams,
+		},
+		"missing last name": {
+			given: args{
+				ctx:      context.Background(),
+				name:     "Caio",
+				lastname: "",
+				data: map[string]models.Account{
+					"0001": {
+						AccountId: "0001",
+						Name:      "Shankar",
+						LastName:  "Nakai",
+					},
+					"0002": {
+						AccountId: "0002",
+						Name:      "Jessica",
+						LastName:  "Lourenco",
+					}},
+			},
+
+			want:    models.Account{},
+			wantErr: ErrMissingParams,
+		},
+		"missing both parameters": {
+			given: args{
+				ctx:      context.Background(),
+				name:     "",
+				lastname: "",
 				data: map[string]models.Account{
 					"0001": {
 						AccountId: "0001",

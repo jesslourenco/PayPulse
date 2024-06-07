@@ -54,7 +54,7 @@ func (r *accountRepoImpl) FindOne(_ context.Context, id string) (models.Account,
 }
 
 func (r *accountRepoImpl) Create(_ context.Context, name string, lastname string) (string, error) {
-	if len(name) == 0 || len(lastname) == 0 {
+	if name == "" || lastname == "" {
 		return "", ErrMissingParams
 	}
 
@@ -62,8 +62,8 @@ func (r *accountRepoImpl) Create(_ context.Context, name string, lastname string
 
 	acc := models.Account{
 		AccountId: id,
-		Name:      "Caio",
-		LastName:  "Henrique",
+		Name:      name,
+		LastName:  lastname,
 	}
 	r.accounts[id] = acc
 
