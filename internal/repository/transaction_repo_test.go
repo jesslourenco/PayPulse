@@ -13,18 +13,19 @@ func TestTransactions_FindAll(t *testing.T) {
 	time := time.Now()
 
 	type args struct {
-		ctx  context.Context
-		data map[string]models.Transaction
+		ctx   context.Context
+		accId string
+		data  map[string]models.Transaction
 	}
 
-	var scenarios = map[string]struct {
-		given   args
-		want    []models.Transaction
-		wantErr error
+	scenarios := map[string]struct {
+		given args
+		want  []models.Transaction
 	}{
 		"happy-path": {
 			given: args{
-				ctx: context.Background(),
+				ctx:   context.Background(),
+				accId: "0001",
 				data: map[string]models.Transaction{
 					"1000000": {
 						TransactionId: "1000000",
@@ -49,16 +50,15 @@ func TestTransactions_FindAll(t *testing.T) {
 					IsConsumed:    false,
 				},
 			},
-			wantErr: nil,
 		},
 
 		"no transactions": {
 			given: args{
-				ctx:  context.Background(),
-				data: map[string]models.Transaction{},
+				ctx:   context.Background(),
+				accId: "0001",
+				data:  map[string]models.Transaction{},
 			},
-			want:    []models.Transaction{},
-			wantErr: nil,
+			want: []models.Transaction{},
 		},
 	}
 
@@ -67,16 +67,8 @@ func TestTransactions_FindAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			repo := setupTransactions(t, tcase.given.data, nil)
 
-			result, err := repo.FindAll(tcase.given.ctx)
-
-			if tcase.wantErr == nil {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, tcase.wantErr.Error())
-			}
-
+			result := repo.FindAll(tcase.given.ctx, tcase.given.accId)
 			assert.ElementsMatch(t, tcase.want, result)
-
 		})
 	}
 }
@@ -90,7 +82,7 @@ func TestTransactions_FindOne(t *testing.T) {
 		data map[string]models.Transaction
 	}
 
-	var scenarios = map[string]struct {
+	scenarios := map[string]struct {
 		given   args
 		want    models.Transaction
 		wantErr error
@@ -160,10 +152,8 @@ func TestTransactions_FindOne(t *testing.T) {
 			}
 
 			assert.Equal(t, tcase.want, result)
-
 		})
 	}
-
 }
 
 func TestTransaction_Create(t *testing.T) {
@@ -180,7 +170,7 @@ func TestTransaction_Create(t *testing.T) {
 		data        map[string]models.Transaction
 	}
 
-	var scenarios = map[string]struct {
+	scenarios := map[string]struct {
 		given   args
 		want    models.Transaction
 		wantErr error

@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrTransactionNotFound  = errors.New("transaction not found")
+	ErrAccountMissing       = errors.New("account id was not provided")
 	ErrMissingFields        = errors.New("transaction is missing a field")
 	ErrMissingSenderField   = fmt.Errorf("sender: %w", ErrMissingFields)
 	ErrMissingReceiverField = fmt.Errorf("receiver: %w", ErrMissingFields)
@@ -19,7 +20,7 @@ var (
 )
 
 type TransactionRepo interface {
-	FindAll(ctx context.Context) ([]models.Transaction, error)
+	FindAll(ctx context.Context, accId string) []models.Transaction
 	FindOne(ctx context.Context, id string) (models.Transaction, error)
 	Create(ctx context.Context, transaction models.Transaction) error
 }
@@ -38,14 +39,16 @@ func NewTransactionRepo() *transactionRepoImpl {
 	}
 }
 
-func (r *transactionRepoImpl) FindAll(_ context.Context) ([]models.Transaction, error) {
+func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) []models.Transaction {
 	transactions := []models.Transaction{}
 
 	for _, t := range r.transactions {
-		transactions = append(transactions, t)
+		if t.Owner == accId {
+			transactions = append(transactions, t)
+		}
 	}
 
-	return transactions, nil
+	return transactions
 }
 
 func (r *transactionRepoImpl) FindOne(_ context.Context, id string) (models.Transaction, error) {
