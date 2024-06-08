@@ -10,7 +10,8 @@ import (
 
 var (
 	ErrTransactionNotFound = errors.New("transaction not found")
-	//ErrMissingParams   = errors.New("must provide a name and last name for an account")
+	ErrMissingFields       = errors.New("transaction is missing one or more of these: owner, sender, receiver, amount")
+	ErrZeroAmount          = errors.New("transaction amount cannot be zero")
 )
 
 type TransactionRepo interface {
@@ -50,4 +51,19 @@ func (r *transactionRepoImpl) FindOne(_ context.Context, id string) (models.Tran
 	}
 
 	return transaction, nil
+}
+
+func (r *transactionRepoImpl) Create(_ context.Context, transaction models.Transaction) error {
+	if transaction.Sender == "" || transaction.Receiver == "" || transaction.Owner == "" {
+		return ErrMissingFields
+	}
+
+	if transaction.Amount == 0 {
+		return ErrZeroAmount
+	}
+
+	id := r.idGenerator()
+	transaction.TransactionId = id
+
+	return nil
 }
