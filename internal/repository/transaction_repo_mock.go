@@ -70,7 +70,7 @@ func (_c *MockTransactionRepo_Create_Call) RunAndReturn(run func(context.Context
 }
 
 // FindAll provides a mock function with given fields: ctx, accId
-func (_m *MockTransactionRepo) FindAll(ctx context.Context, accId string) []models.Transaction {
+func (_m *MockTransactionRepo) FindAll(ctx context.Context, accId string) ([]models.Transaction, error) {
 	ret := _m.Called(ctx, accId)
 
 	if len(ret) == 0 {
@@ -78,6 +78,10 @@ func (_m *MockTransactionRepo) FindAll(ctx context.Context, accId string) []mode
 	}
 
 	var r0 []models.Transaction
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) ([]models.Transaction, error)); ok {
+		return rf(ctx, accId)
+	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) []models.Transaction); ok {
 		r0 = rf(ctx, accId)
 	} else {
@@ -86,7 +90,13 @@ func (_m *MockTransactionRepo) FindAll(ctx context.Context, accId string) []mode
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, accId)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockTransactionRepo_FindAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindAll'
@@ -108,12 +118,12 @@ func (_c *MockTransactionRepo_FindAll_Call) Run(run func(ctx context.Context, ac
 	return _c
 }
 
-func (_c *MockTransactionRepo_FindAll_Call) Return(_a0 []models.Transaction) *MockTransactionRepo_FindAll_Call {
-	_c.Call.Return(_a0)
+func (_c *MockTransactionRepo_FindAll_Call) Return(_a0 []models.Transaction, _a1 error) *MockTransactionRepo_FindAll_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockTransactionRepo_FindAll_Call) RunAndReturn(run func(context.Context, string) []models.Transaction) *MockTransactionRepo_FindAll_Call {
+func (_c *MockTransactionRepo_FindAll_Call) RunAndReturn(run func(context.Context, string) ([]models.Transaction, error)) *MockTransactionRepo_FindAll_Call {
 	_c.Call.Return(run)
 	return _c
 }

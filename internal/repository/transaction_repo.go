@@ -20,7 +20,7 @@ var (
 )
 
 type TransactionRepo interface {
-	FindAll(ctx context.Context, accId string) []models.Transaction
+	FindAll(ctx context.Context, accId string) ([]models.Transaction, error)
 	FindOne(ctx context.Context, id string) (models.Transaction, error)
 	Create(ctx context.Context, transaction models.Transaction) error
 }
@@ -39,7 +39,7 @@ func NewTransactionRepo() *transactionRepoImpl {
 	}
 }
 
-func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) []models.Transaction {
+func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) ([]models.Transaction, error) {
 	transactions := []models.Transaction{}
 
 	for _, t := range r.transactions {
@@ -48,7 +48,7 @@ func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) []models.
 		}
 	}
 
-	return transactions
+	return transactions, nil
 }
 
 func (r *transactionRepoImpl) FindOne(_ context.Context, id string) (models.Transaction, error) {
