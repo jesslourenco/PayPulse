@@ -199,12 +199,13 @@ func TestTransaction_Create(t *testing.T) {
 				data: map[string]models.Transaction{},
 			},
 			want: models.Transaction{
-				Owner:      "0001",
-				Sender:     "0001",
-				Receiver:   "0001",
-				CreatedAt:  time,
-				Amount:     1000,
-				IsConsumed: false,
+				TransactionId: id,
+				Owner:         "0001",
+				Sender:        "0001",
+				Receiver:      "0001",
+				CreatedAt:     time,
+				Amount:        1000,
+				IsConsumed:    false,
 			},
 			wantErr: nil,
 		},
@@ -223,7 +224,7 @@ func TestTransaction_Create(t *testing.T) {
 				data: map[string]models.Transaction{},
 			},
 			want:    models.Transaction{},
-			wantErr: ErrMissingFields,
+			wantErr: ErrMissingOwnerField,
 		},
 
 		"missing sender": {
@@ -240,7 +241,7 @@ func TestTransaction_Create(t *testing.T) {
 				data: map[string]models.Transaction{},
 			},
 			want:    models.Transaction{},
-			wantErr: ErrMissingFields,
+			wantErr: ErrMissingSenderField,
 		},
 
 		"missing receiver": {
@@ -257,7 +258,7 @@ func TestTransaction_Create(t *testing.T) {
 				data: map[string]models.Transaction{},
 			},
 			want:    models.Transaction{},
-			wantErr: ErrMissingFields,
+			wantErr: ErrMissingReceiverField,
 		},
 
 		"missing owner, receiver, sender": {
@@ -304,13 +305,12 @@ func TestTransaction_Create(t *testing.T) {
 
 			if tcase.wantErr == nil {
 				assert.NoError(t, err)
-				acc, err := repo.FindOne(tcase.given.ctx, id)
+				transaction, err := repo.FindOne(tcase.given.ctx, id)
 				assert.NoError(t, err)
-				assert.Equal(t, tcase.want, acc)
+				assert.Equal(t, tcase.want, transaction)
 			} else {
-				assert.EqualError(t, err, tcase.wantErr.Error())
+				assert.ErrorIs(t, err, tcase.wantErr)
 			}
-
 		})
 	}
 }
