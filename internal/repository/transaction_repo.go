@@ -3,18 +3,25 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/gopay/internal/models"
 	"github.com/gopay/internal/utils"
 )
 
 var (
-	ErrTransactionNotFound = errors.New("transaction not found")
-	//ErrMissingParams   = errors.New("must provide a name and last name for an account")
+	ErrTransactionNotFound  = errors.New("transaction not found")
+	ErrMissingFields        = errors.New("transaction is missing a field")
+	ErrMissingSenderField   = fmt.Errorf("sender: %w", ErrMissingFields)
+	ErrMissingReceiverField = fmt.Errorf("receiver: %w", ErrMissingFields)
+	ErrMissingOwnerField    = fmt.Errorf("owner: %w", ErrMissingFields)
+	ErrZeroAmount           = errors.New("transaction amount cannot be zero")
 )
 
 type TransactionRepo interface {
 	FindAll(ctx context.Context) ([]models.Transaction, error)
+	FindOne(ctx context.Context, id string) (models.Transaction, error)
+	Create(ctx context.Context, transaction models.Transaction) error
 }
 
 var _ TransactionRepo = (*transactionRepoImpl)(nil)
@@ -49,4 +56,28 @@ func (r *transactionRepoImpl) FindOne(_ context.Context, id string) (models.Tran
 	}
 
 	return transaction, nil
+}
+
+func (r *transactionRepoImpl) Create(_ context.Context, transaction models.Transaction) error {
+	if transaction.Sender == "" {
+		return ErrMissingSenderField
+	}
+	if transaction.Receiver == "" {
+		return ErrMissingReceiverField
+	}
+
+	if transaction.Owner == "" {
+		return ErrMissingOwnerField
+	}
+
+	if transaction.Amount == 0 {
+		return ErrZeroAmount
+	}
+
+	id := r.idGenerator()
+	transaction.TransactionId = id
+
+	r.transactions[id] = transaction
+
+	return nil
 }
