@@ -185,6 +185,53 @@ func (_c *MockTransactionRepo_FindOne_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// MarkAsConsumed provides a mock function with given fields: ctx, id
+func (_m *MockTransactionRepo) MarkAsConsumed(ctx context.Context, id string) error {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkAsConsumed")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockTransactionRepo_MarkAsConsumed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkAsConsumed'
+type MockTransactionRepo_MarkAsConsumed_Call struct {
+	*mock.Call
+}
+
+// MarkAsConsumed is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *MockTransactionRepo_Expecter) MarkAsConsumed(ctx interface{}, id interface{}) *MockTransactionRepo_MarkAsConsumed_Call {
+	return &MockTransactionRepo_MarkAsConsumed_Call{Call: _e.mock.On("MarkAsConsumed", ctx, id)}
+}
+
+func (_c *MockTransactionRepo_MarkAsConsumed_Call) Run(run func(ctx context.Context, id string)) *MockTransactionRepo_MarkAsConsumed_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTransactionRepo_MarkAsConsumed_Call) Return(_a0 error) *MockTransactionRepo_MarkAsConsumed_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockTransactionRepo_MarkAsConsumed_Call) RunAndReturn(run func(context.Context, string) error) *MockTransactionRepo_MarkAsConsumed_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockTransactionRepo creates a new instance of MockTransactionRepo. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockTransactionRepo(t interface {

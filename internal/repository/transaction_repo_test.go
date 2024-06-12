@@ -19,8 +19,9 @@ func TestTransactions_FindAll(t *testing.T) {
 	}
 
 	scenarios := map[string]struct {
-		given args
-		want  []models.Transaction
+		given   args
+		want    []models.Transaction
+		wantErr error
 	}{
 		"happy-path": {
 			given: args{
@@ -67,7 +68,13 @@ func TestTransactions_FindAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			repo := setupTransactions(t, tcase.given.data, nil)
 
-			result := repo.FindAll(tcase.given.ctx, tcase.given.accId)
+			result, err := repo.FindAll(tcase.given.ctx, tcase.given.accId)
+
+			if tcase.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tcase.wantErr.Error())
+			}
 			assert.ElementsMatch(t, tcase.want, result)
 		})
 	}

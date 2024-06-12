@@ -23,6 +23,7 @@ type TransactionRepo interface {
 	FindAll(ctx context.Context, accId string) ([]models.Transaction, error)
 	FindOne(ctx context.Context, id string) (models.Transaction, error)
 	Create(ctx context.Context, transaction models.Transaction) error
+	MarkAsConsumed(ctx context.Context, id string) error
 }
 
 var _ TransactionRepo = (*transactionRepoImpl)(nil)
@@ -80,6 +81,18 @@ func (r *transactionRepoImpl) Create(_ context.Context, transaction models.Trans
 	id := r.idGenerator()
 	transaction.TransactionId = id
 
+	r.transactions[id] = transaction
+
+	return nil
+}
+
+func (r *transactionRepoImpl) MarkAsConsumed(ctx context.Context, id string) error {
+	transaction, err := r.FindOne(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	transaction.IsConsumed = true
 	r.transactions[id] = transaction
 
 	return nil
