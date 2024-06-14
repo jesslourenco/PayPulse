@@ -9,6 +9,122 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTransaction_GetBalance(t *testing.T) {
+	time := time.Now()
+	id := "1000"
+
+	type args struct {
+		ctx  context.Context
+		data map[string]models.Transaction
+	}
+
+	scenarios := map[string]struct {
+		given   args
+		want    models.Balance
+		wantErr error
+	}{
+		"happy-path-credits": {
+			given: args{
+				ctx: context.Background(),
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
+					},
+					"2000000": {
+						TransactionId: "2000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        3000.00,
+						IsConsumed:    false,
+					},
+				},
+			},
+
+			want: models.Balance{
+				AccountId: id,
+				Amount:    10000.00,
+			},
+			wantErr: nil,
+		},
+
+		"happy-path-mix": {
+			given: args{
+				ctx: context.Background(),
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
+					},
+					"2000000": {
+						TransactionId: "2000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        3000.00,
+						IsConsumed:    true,
+					},
+					"3000000": {
+						TransactionId: "3000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        -3000.00,
+						IsConsumed:    true,
+					},
+				},
+			},
+
+			want: models.Balance{
+				AccountId: id,
+				Amount:    7000.00,
+			},
+			wantErr: nil,
+		},
+		"no-transactions": {
+			given: args{
+				ctx:  context.Background(),
+				data: map[string]models.Transaction{},
+			},
+			want: models.Balance{
+				AccountId: id,
+				Amount:    0.0,
+			},
+			wantErr: nil,
+		},
+	}
+
+	for name, tcase := range scenarios {
+		tcase := tcase
+		t.Run(name, func(t *testing.T) {
+			repo := setupTransactions(t, tcase.given.data, nil)
+
+			result, err := repo.GetBalance(tcase.given.ctx, id)
+
+			if tcase.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tcase.wantErr.Error())
+			}
+			assert.Equal(t, tcase.want, result)
+		})
+	}
+}
+
 func TestTransactions_FindAll(t *testing.T) {
 	time := time.Now()
 

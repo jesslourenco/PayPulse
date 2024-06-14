@@ -185,6 +185,63 @@ func (_c *MockTransactionRepo_FindOne_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// GetBalance provides a mock function with given fields: ctx, id
+func (_m *MockTransactionRepo) GetBalance(ctx context.Context, id string) (models.Balance, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetBalance")
+	}
+
+	var r0 models.Balance
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (models.Balance, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) models.Balance); ok {
+		r0 = rf(ctx, id)
+	} else {
+		r0 = ret.Get(0).(models.Balance)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockTransactionRepo_GetBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetBalance'
+type MockTransactionRepo_GetBalance_Call struct {
+	*mock.Call
+}
+
+// GetBalance is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *MockTransactionRepo_Expecter) GetBalance(ctx interface{}, id interface{}) *MockTransactionRepo_GetBalance_Call {
+	return &MockTransactionRepo_GetBalance_Call{Call: _e.mock.On("GetBalance", ctx, id)}
+}
+
+func (_c *MockTransactionRepo_GetBalance_Call) Run(run func(ctx context.Context, id string)) *MockTransactionRepo_GetBalance_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *MockTransactionRepo_GetBalance_Call) Return(_a0 models.Balance, _a1 error) *MockTransactionRepo_GetBalance_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockTransactionRepo_GetBalance_Call) RunAndReturn(run func(context.Context, string) (models.Balance, error)) *MockTransactionRepo_GetBalance_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // MarkAsConsumed provides a mock function with given fields: ctx, id
 func (_m *MockTransactionRepo) MarkAsConsumed(ctx context.Context, id string) error {
 	ret := _m.Called(ctx, id)
