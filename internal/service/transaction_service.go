@@ -12,6 +12,7 @@ import (
 var (
 	ErrInvalidAmount      = errors.New("amount cannot be less or equal to zero")
 	ErrInsufficentBalance = errors.New("insufficient balance")
+	ErrNoTransactions     = errors.New("account has no transactions")
 )
 
 var nowOriginal = func() time.Time {
@@ -31,6 +32,8 @@ func resetClock() {
 
 type TransactionService interface {
 	Deposit(ctx context.Context, owner string, amount float32) error
+	Withdraw(ctx context.Context, owner string, amount float32) error
+	debit(ctx context.Context, owner string, receiver string, amount float32) error
 }
 
 var _ TransactionService = (*transactionServiceImpl)(nil)
@@ -67,4 +70,75 @@ func (r *transactionServiceImpl) Deposit(ctx context.Context, owner string, amou
 	}
 
 	return r.transactionRepo.Create(ctx, transaction)
+}
+
+func (r *transactionServiceImpl) Withdraw(ctx context.Context, owner string, amount float32) error {
+	_, err := r.accountRepo.FindOne(ctx, owner)
+	if err != nil {
+		return err
+	}
+
+	err = r.debit(ctx, owner, owner, amount)
+	if err != nil {
+		return err
+	}
+
+	transaction := models.Transaction{
+		CreatedAt:  clockNow(),
+		IsConsumed: true,
+		Owner:      owner,
+		Sender:     owner,
+		Receiver:   owner,
+		Amount:     amount,
+	}
+	return r.transactionRepo.Create(ctx, transaction)
+}
+
+func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiver string, amount float32) error {
+	if amount >= 0 {
+		return ErrInvalidAmount
+	}
+
+	var oldest models.Transaction
+	transactions, err := r.transactionRepo.FindAll(ctx, owner)
+	if err != nil {
+		return err
+	}
+
+	if len(transactions) == 0 {
+		return ErrNoTransactions
+	}
+
+	var balance float64
+	for _, t := range transactions {
+		if t.Owner == owner && !t.IsConsumed {
+			balance += float64(t.Amount)
+			if (models.Transaction{} == oldest) || t.CreatedAt.Before(oldest.CreatedAt) {
+				oldest = t
+			}
+		}
+	}
+
+	if (balance + float64(amount)) < 0 {
+		return ErrInsufficentBalance
+	}
+
+	err = r.transactionRepo.MarkAsConsumed(ctx, oldest.TransactionId)
+	if err != nil {
+		return err
+	}
+
+	if (oldest.Amount + amount) != 0 {
+		transaction := models.Transaction{
+			CreatedAt:  clockNow(),
+			IsConsumed: false,
+			Owner:      owner,
+			Sender:     owner,
+			Receiver:   receiver,
+			Amount:     oldest.Amount + amount,
+		}
+		return r.transactionRepo.Create(ctx, transaction)
+	}
+
+	return nil
 }
