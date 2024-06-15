@@ -33,7 +33,6 @@ func resetClock() {
 type TransactionService interface {
 	Deposit(ctx context.Context, owner string, amount float32) error
 	Withdraw(ctx context.Context, owner string, amount float32) error
-	debit(ctx context.Context, owner string, receiver string, amount float32) error
 }
 
 var _ TransactionService = (*transactionServiceImpl)(nil)
