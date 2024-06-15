@@ -17,6 +17,7 @@ var (
 	ErrMissingReceiverField = fmt.Errorf("receiver: %w", ErrMissingFields)
 	ErrMissingOwnerField    = fmt.Errorf("owner: %w", ErrMissingFields)
 	ErrZeroAmount           = errors.New("transaction amount cannot be zero")
+	ErrNegativeBalance      = errors.New("negative balance")
 )
 
 type TransactionRepo interface {
@@ -51,6 +52,10 @@ func (r *transactionRepoImpl) GetBalance(ctx context.Context, id string) (models
 		if t.Owner == id && !t.IsConsumed {
 			balance.Amount += float64(t.Amount)
 		}
+	}
+
+	if balance.Amount < 0 {
+		return balance, ErrNegativeBalance
 	}
 
 	return balance, nil

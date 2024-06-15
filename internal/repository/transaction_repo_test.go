@@ -106,6 +106,36 @@ func TestTransaction_GetBalance(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		"negative-balance": {
+			given: args{
+				ctx: context.Background(),
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        -7000.00,
+						IsConsumed:    false,
+					},
+					"2000000": {
+						TransactionId: "2000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        3000.00,
+						IsConsumed:    false,
+					},
+				},
+			},
+			want: models.Balance{
+				AccountId: id,
+				Amount:    -4000.0,
+			},
+			wantErr: ErrNegativeBalance,
+		},
 	}
 
 	for name, tcase := range scenarios {
