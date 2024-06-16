@@ -164,28 +164,16 @@ func TestTransactionService_Withdraw(t *testing.T) {
 					LastName:  "Nakai",
 				}, nil)
 
+				deps.transRepoMock.On("GetBalance", ctx, owner).Return(models.Balance{
+					AccountId: owner,
+					Amount:    7000,
+				}, nil)
 				deps.transRepoMock.On("FindAll", ctx, owner).Return(transactions, nil)
 				deps.transRepoMock.On("MarkAsConsumed", ctx, transactions[0].TransactionId).Return(nil)
 				deps.transRepoMock.On("Create", ctx, transaction).Return(nil)
 				deps.transRepoMock.On("Create", ctx, debitTransaction).Return(nil)
 			},
 			wantErr: nil,
-		},
-		"no-transactions": {
-			given: args{
-				owner:  owner,
-				amount: amount,
-			},
-			doMocks: func(deps transactionServiceDependencies) {
-				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
-					AccountId: owner,
-					Name:      "Shankar",
-					LastName:  "Nakai",
-				}, nil)
-
-				deps.transRepoMock.On("FindAll", ctx, owner).Return([]models.Transaction{}, ErrNoTransactions)
-			},
-			wantErr: ErrNoTransactions,
 		},
 		"invalid-owner": {
 			given: args{
@@ -217,6 +205,25 @@ func TestTransactionService_Withdraw(t *testing.T) {
 				amount: amount,
 			},
 			doMocks: func(deps transactionServiceDependencies) {
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
+					AccountId: owner,
+					Name:      "Shankar",
+					LastName:  "Nakai",
+				}, nil)
+
+				deps.transRepoMock.On("GetBalance", ctx, owner).Return(models.Balance{
+					AccountId: owner,
+					Amount:    500,
+				}, nil)
+			},
+			wantErr: ErrInsufficentBalance,
+		},
+		"multi-transaction-consumption": {
+			given: args{
+				owner:  owner,
+				amount: -400.0,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
 				transactions := []models.Transaction{
 					{
 						TransactionId: "1000000",
@@ -225,18 +232,64 @@ func TestTransactionService_Withdraw(t *testing.T) {
 						Owner:         owner,
 						Sender:        owner,
 						Receiver:      owner,
-						Amount:        500.0,
+						Amount:        200.0,
+					},
+					{
+						TransactionId: "2000000",
+						CreatedAt:     now.Add(10),
+						IsConsumed:    false,
+						Owner:         owner,
+						Sender:        owner,
+						Receiver:      owner,
+						Amount:        100.0,
+					},
+					{
+						TransactionId: "3000000",
+						CreatedAt:     now.Add(50),
+						IsConsumed:    false,
+						Owner:         owner,
+						Sender:        owner,
+						Receiver:      owner,
+						Amount:        300.0,
 					},
 				}
+
+				debitTransaction := models.Transaction{
+					CreatedAt:  now,
+					IsConsumed: true,
+					Owner:      owner,
+					Sender:     owner,
+					Receiver:   owner,
+					Amount:     -400,
+				}
+
+				transaction := models.Transaction{
+					CreatedAt:  now,
+					IsConsumed: false,
+					Owner:      owner,
+					Sender:     owner,
+					Receiver:   owner,
+					Amount:     200,
+				}
+
 				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
 					AccountId: owner,
 					Name:      "Shankar",
 					LastName:  "Nakai",
 				}, nil)
 
+				deps.transRepoMock.On("GetBalance", ctx, owner).Return(models.Balance{
+					AccountId: owner,
+					Amount:    600,
+				}, nil)
 				deps.transRepoMock.On("FindAll", ctx, owner).Return(transactions, nil)
+				deps.transRepoMock.On("MarkAsConsumed", ctx, transactions[0].TransactionId).Return(nil)
+				deps.transRepoMock.On("MarkAsConsumed", ctx, transactions[1].TransactionId).Return(nil)
+				deps.transRepoMock.On("MarkAsConsumed", ctx, transactions[2].TransactionId).Return(nil)
+				deps.transRepoMock.On("Create", ctx, transaction).Return(nil)
+				deps.transRepoMock.On("Create", ctx, debitTransaction).Return(nil)
 			},
-			wantErr: ErrInsufficentBalance,
+			wantErr: nil,
 		},
 	}
 

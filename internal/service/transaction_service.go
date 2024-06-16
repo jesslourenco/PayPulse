@@ -12,7 +12,6 @@ import (
 var (
 	ErrInvalidAmount      = errors.New("amount cannot be less or equal to zero")
 	ErrInsufficentBalance = errors.New("insufficient balance")
-	ErrNoTransactions     = errors.New("account has no transactions")
 )
 
 var nowOriginal = func() time.Time {
@@ -98,45 +97,48 @@ func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiv
 		return ErrInvalidAmount
 	}
 
-	var oldest models.Transaction
+	balance, err := r.transactionRepo.GetBalance(ctx, owner)
+	if err != nil {
+		return err
+	}
+
+	if (balance.Amount + float64(amount)) < 0 {
+		return ErrInsufficentBalance
+	}
+
 	transactions, err := r.transactionRepo.FindAll(ctx, owner)
 	if err != nil {
 		return err
 	}
 
-	if len(transactions) == 0 {
-		return ErrNoTransactions
-	}
-
-	var balance float64
+	debit := amount
 	for _, t := range transactions {
-		if t.Owner == owner && !t.IsConsumed {
-			balance += float64(t.Amount)
-			if (models.Transaction{} == oldest) || t.CreatedAt.Before(oldest.CreatedAt) {
-				oldest = t
+		err = r.transactionRepo.MarkAsConsumed(ctx, t.TransactionId)
+		if err != nil {
+			return err
+		}
+
+		if t.Amount+debit < 0 {
+			debit = debit + t.Amount
+			continue
+		}
+
+		if t.Amount+debit > 0 {
+			transaction := models.Transaction{
+				CreatedAt:  clockNow(),
+				IsConsumed: false,
+				Owner:      owner,
+				Sender:     owner,
+				Receiver:   receiver,
+				Amount:     t.Amount + debit,
 			}
+			err = r.transactionRepo.Create(ctx, transaction)
+			if err != nil {
+				return err
+			}
+
+			break
 		}
-	}
-
-	if (balance + float64(amount)) < 0 {
-		return ErrInsufficentBalance
-	}
-
-	err = r.transactionRepo.MarkAsConsumed(ctx, oldest.TransactionId)
-	if err != nil {
-		return err
-	}
-
-	if (oldest.Amount + amount) != 0 {
-		transaction := models.Transaction{
-			CreatedAt:  clockNow(),
-			IsConsumed: false,
-			Owner:      owner,
-			Sender:     owner,
-			Receiver:   receiver,
-			Amount:     oldest.Amount + amount,
-		}
-		return r.transactionRepo.Create(ctx, transaction)
 	}
 
 	return nil

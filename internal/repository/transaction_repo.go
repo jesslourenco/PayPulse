@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/gopay/internal/models"
 	"github.com/gopay/internal/utils"
@@ -69,6 +70,10 @@ func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) ([]models
 			transactions = append(transactions, t)
 		}
 	}
+
+	sort.Slice(transactions, func(i, j int) bool {
+		return transactions[i].CreatedAt.Before(transactions[j].CreatedAt)
+	})
 
 	return transactions, nil
 }
