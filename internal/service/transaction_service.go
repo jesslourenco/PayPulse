@@ -111,26 +111,26 @@ func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiv
 		return err
 	}
 
-	debit := amount
+	debit := (-1) * amount
 	for _, t := range transactions {
 		err = r.transactionRepo.MarkAsConsumed(ctx, t.TransactionId)
 		if err != nil {
 			return err
 		}
 
-		if t.Amount+debit < 0 {
-			debit = debit + t.Amount
+		if t.Amount-debit < 0 {
+			debit = debit - t.Amount
 			continue
 		}
 
-		if t.Amount+debit > 0 {
+		if t.Amount-debit > 0 {
 			transaction := models.Transaction{
 				CreatedAt:  clockNow(),
 				IsConsumed: false,
 				Owner:      owner,
 				Sender:     owner,
 				Receiver:   receiver,
-				Amount:     t.Amount + debit,
+				Amount:     t.Amount - debit,
 			}
 			err = r.transactionRepo.Create(ctx, transaction)
 			if err != nil {
