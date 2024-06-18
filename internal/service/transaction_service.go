@@ -118,12 +118,18 @@ func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiv
 			return err
 		}
 
-		if t.Amount-debit < 0 {
+		remaining := t.Amount - debit
+
+		if remaining == 0 {
+			break
+		}
+
+		if remaining < 0 {
 			debit = debit - t.Amount
 			continue
 		}
 
-		if t.Amount-debit > 0 {
+		if remaining > 0 {
 			transaction := models.Transaction{
 				CreatedAt:  clockNow(),
 				IsConsumed: false,
