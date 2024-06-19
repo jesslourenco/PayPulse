@@ -1,0 +1,9 @@
+with-expecter: true
+inpackage: true
+dir: "{{.InterfaceDir}}"
+filename: "{{.InterfaceNameSnake}}_mock.go"
+packages:
+  github.com/gopay/internal/repository:
+    interfaces:
+      TransactionRepo: 
+      AccountRepo:
