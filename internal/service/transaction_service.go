@@ -7,11 +7,14 @@ import (
 
 	"github.com/gopay/internal/models"
 	"github.com/gopay/internal/repository"
+	"github.com/gopay/internal/utils"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	ErrInvalidAmount      = errors.New("amount cannot be less or equal to zero")
-	ErrInsufficentBalance = errors.New("insufficient balance")
+	ErrInvalidAmount        = errors.New("amount cannot be less or equal to zero")
+	ErrInsufficentBalance   = errors.New("insufficient balance")
+	ErrFailedDebitOperation = errors.New("debit operation  unsuccessful ")
 )
 
 var nowOriginal = func() time.Time {
@@ -76,7 +79,7 @@ func (r *transactionServiceImpl) Withdraw(ctx context.Context, owner string, amo
 		return err
 	}
 
-	err = r.debit(ctx, owner, owner, amount)
+	consumed, err := r.debit(ctx, owner, owner, amount)
 	if err != nil {
 		return err
 	}
@@ -89,35 +92,57 @@ func (r *transactionServiceImpl) Withdraw(ctx context.Context, owner string, amo
 		Receiver:   owner,
 		Amount:     amount,
 	}
-	return r.transactionRepo.Create(ctx, transaction)
+
+	err = r.transactionRepo.Create(ctx, transaction)
+	if err != nil {
+		go func() {
+			err := utils.Retry(func() error {
+				return r.transactionRepo.RollBackConsumed(ctx, consumed)
+			}, "rollback of MarkAsConsumed")
+			log.Error().Err(err)
+		}()
+		log.Error().Err(err)
+		return ErrFailedDebitOperation
+	}
+
+	return nil
 }
 
-func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiver string, amount float32) error {
+func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiver string, amount float32) ([]string, error) {
 	if amount >= 0 {
-		return ErrInvalidAmount
+		return []string{}, ErrInvalidAmount
 	}
 
 	balance, err := r.transactionRepo.GetBalance(ctx, owner)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
 	if (balance.Amount + float64(amount)) < 0 {
-		return ErrInsufficentBalance
+		return []string{}, ErrInsufficentBalance
 	}
 
 	transactions, err := r.transactionRepo.FindAll(ctx, owner)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
 	debit := (-1) * amount
+	transConsumed := []string{}
 	for _, t := range transactions {
 		err = r.transactionRepo.MarkAsConsumed(ctx, t.TransactionId)
 		if err != nil {
-			return err
+			utils.Go(func() {
+				err := utils.Retry(func() error {
+					return r.transactionRepo.RollBackConsumed(ctx, transConsumed)
+				}, "rollback of MarkAsConsumed")
+				log.Error().Err(err)
+			})
+			log.Error().Err(err)
+			return []string{}, ErrFailedDebitOperation
 		}
 
+		transConsumed = append(transConsumed, t.TransactionId)
 		remaining := t.Amount - debit
 
 		if remaining == 0 {
@@ -140,12 +165,19 @@ func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiv
 			}
 			err = r.transactionRepo.Create(ctx, transaction)
 			if err != nil {
-				return err
+				go func() {
+					err := utils.Retry(func() error {
+						return r.transactionRepo.RollBackConsumed(ctx, transConsumed)
+					}, "rollback of MarkAsConsumed")
+					log.Error().Err(err)
+				}()
+				log.Error().Err(err)
+				return []string{}, ErrFailedDebitOperation
 			}
 
 			break
 		}
 	}
 
-	return nil
+	return transConsumed, nil
 }
