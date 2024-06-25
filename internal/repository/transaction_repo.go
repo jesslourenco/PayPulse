@@ -24,6 +24,7 @@ type TransactionRepo interface {
 	FindOne(ctx context.Context, id string) (models.Transaction, error)
 	Create(ctx context.Context, transaction models.Transaction) error
 	MarkAsConsumed(ctx context.Context, id string) error
+	GetBalance(ctx context.Context, id string) (models.Balance, error)
 }
 
 var _ TransactionRepo = (*transactionRepoImpl)(nil)
@@ -38,6 +39,21 @@ func NewTransactionRepo() *transactionRepoImpl {
 		transactions: make(map[string]models.Transaction),
 		idGenerator:  utils.GetTransactionUUID,
 	}
+}
+
+func (r *transactionRepoImpl) GetBalance(ctx context.Context, id string) (models.Balance, error) {
+	balance := models.Balance{
+		AccountId: id,
+		Amount:    0.0,
+	}
+
+	for _, t := range r.transactions {
+		if t.Owner == id && !t.IsConsumed {
+			balance.Amount += float64(t.Amount)
+		}
+	}
+
+	return balance, nil
 }
 
 func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) ([]models.Transaction, error) {
