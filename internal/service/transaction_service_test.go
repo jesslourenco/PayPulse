@@ -101,6 +101,164 @@ func TestTransactionService_Deposit(t *testing.T) {
 	}
 }
 
+func TestTransactionService_Withdraw(t *testing.T) {
+	now := time.Now()
+	setupClock(now)
+	defer resetClock()
+
+	var (
+		ctx            = context.Background()
+		owner          = "0001"
+		amount float32 = -1000.0
+	)
+
+	type args struct {
+		owner  string
+		amount float32
+	}
+
+	scenarios := map[string]struct {
+		given   args
+		doMocks func(deps transactionServiceDependencies)
+		wantErr error
+	}{
+		"happy-path": {
+			given: args{
+				owner:  owner,
+				amount: amount,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
+				transactions := []models.Transaction{
+					{
+						TransactionId: "1000000",
+						CreatedAt:     now,
+						IsConsumed:    false,
+						Owner:         owner,
+						Sender:        owner,
+						Receiver:      owner,
+						Amount:        7000.0,
+					},
+				}
+
+				debitTransaction := models.Transaction{
+					CreatedAt:  now,
+					IsConsumed: true,
+					Owner:      owner,
+					Sender:     owner,
+					Receiver:   owner,
+					Amount:     amount,
+				}
+
+				transaction := models.Transaction{
+					CreatedAt:  now,
+					IsConsumed: false,
+					Owner:      owner,
+					Sender:     owner,
+					Receiver:   owner,
+					Amount:     7000 + amount,
+				}
+
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
+					AccountId: owner,
+					Name:      "Shankar",
+					LastName:  "Nakai",
+				}, nil)
+
+				deps.transRepoMock.On("FindAll", ctx, owner).Return(transactions, nil)
+				deps.transRepoMock.On("MarkAsConsumed", ctx, transactions[0].TransactionId).Return(nil)
+				deps.transRepoMock.On("Create", ctx, transaction).Return(nil)
+				deps.transRepoMock.On("Create", ctx, debitTransaction).Return(nil)
+			},
+			wantErr: nil,
+		},
+		"no-transactions": {
+			given: args{
+				owner:  owner,
+				amount: amount,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
+					AccountId: owner,
+					Name:      "Shankar",
+					LastName:  "Nakai",
+				}, nil)
+
+				deps.transRepoMock.On("FindAll", ctx, owner).Return([]models.Transaction{}, ErrNoTransactions)
+			},
+			wantErr: ErrNoTransactions,
+		},
+		"invalid-owner": {
+			given: args{
+				owner:  owner,
+				amount: amount,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{}, repository.ErrAccountNotFound)
+			},
+			wantErr: repository.ErrAccountNotFound,
+		},
+		"invalid-amount": {
+			given: args{
+				owner:  owner,
+				amount: amount * -1,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
+					AccountId: owner,
+					Name:      "Shankar",
+					LastName:  "Nakai",
+				}, nil)
+			},
+			wantErr: ErrInvalidAmount,
+		},
+		"insufficient-balance": {
+			given: args{
+				owner:  owner,
+				amount: amount,
+			},
+			doMocks: func(deps transactionServiceDependencies) {
+				transactions := []models.Transaction{
+					{
+						TransactionId: "1000000",
+						CreatedAt:     now,
+						IsConsumed:    false,
+						Owner:         owner,
+						Sender:        owner,
+						Receiver:      owner,
+						Amount:        500.0,
+					},
+				}
+				deps.accRepoMock.On("FindOne", ctx, owner).Return(models.Account{
+					AccountId: owner,
+					Name:      "Shankar",
+					LastName:  "Nakai",
+				}, nil)
+
+				deps.transRepoMock.On("FindAll", ctx, owner).Return(transactions, nil)
+			},
+			wantErr: ErrInsufficentBalance,
+		},
+	}
+
+	for name, tcase := range scenarios {
+		tcase := tcase
+		t.Run(name, func(t *testing.T) {
+			service, deps := setupTransactionService(t)
+			if tcase.doMocks != nil {
+				tcase.doMocks(deps)
+			}
+
+			err := service.Withdraw(ctx, tcase.given.owner, tcase.given.amount)
+
+			if tcase.wantErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.ErrorIs(t, err, tcase.wantErr)
+			}
+		})
+	}
+}
+
 type transactionServiceDependencies struct {
 	transRepoMock *repository.MockTransactionRepo
 	accRepoMock   *repository.MockAccountRepo
