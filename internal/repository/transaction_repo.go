@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/gopay/internal/models"
 	"github.com/gopay/internal/utils"
@@ -26,6 +27,7 @@ type TransactionRepo interface {
 	Create(ctx context.Context, transaction models.Transaction) error
 	MarkAsConsumed(ctx context.Context, id string) error
 	GetBalance(ctx context.Context, id string) (models.Balance, error)
+	RollBackConsumed(ctx context.Context, tConsumed []string) error
 }
 
 var _ TransactionRepo = (*transactionRepoImpl)(nil)
@@ -69,6 +71,10 @@ func (r *transactionRepoImpl) FindAll(_ context.Context, accId string) ([]models
 			transactions = append(transactions, t)
 		}
 	}
+
+	sort.Slice(transactions, func(i, j int) bool {
+		return transactions[i].CreatedAt.Before(transactions[j].CreatedAt)
+	})
 
 	return transactions, nil
 }
@@ -115,6 +121,19 @@ func (r *transactionRepoImpl) MarkAsConsumed(ctx context.Context, id string) err
 
 	transaction.IsConsumed = true
 	r.transactions[id] = transaction
+
+	return nil
+}
+
+func (r *transactionRepoImpl) RollBackConsumed(ctx context.Context, tConsumed []string) error {
+	for _, tid := range tConsumed {
+		t, exists := r.transactions[tid]
+		if !exists {
+			return fmt.Errorf("transaction id %s: %w", tid, ErrTransactionNotFound)
+		}
+		t.IsConsumed = false
+		r.transactions[tid] = t
+	}
 
 	return nil
 }

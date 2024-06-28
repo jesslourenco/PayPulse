@@ -9,6 +9,96 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestTransaction_RollBackConsumed(t *testing.T) {
+	time := time.Now()
+	id := "001"
+
+	type args struct {
+		ctx           context.Context
+		data          map[string]models.Transaction
+		transConsumed []string
+	}
+
+	scenarios := map[string]struct {
+		given   args
+		wantErr error
+	}{
+		"happy-path": {
+			given: args{
+				ctx: context.Background(),
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
+					},
+					"2000000": {
+						TransactionId: "2000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        3000.00,
+						IsConsumed:    false,
+					},
+				},
+				transConsumed: []string{"1000000", "2000000"},
+			},
+			wantErr: nil,
+		},
+		"invalid-transaction": {
+			given: args{
+				ctx: context.Background(),
+				data: map[string]models.Transaction{
+					"1000000": {
+						TransactionId: "1000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        7000.00,
+						IsConsumed:    false,
+					},
+					"2000000": {
+						TransactionId: "2000000",
+						Owner:         id,
+						Sender:        id,
+						Receiver:      id,
+						CreatedAt:     time,
+						Amount:        3000.00,
+						IsConsumed:    false,
+					},
+				},
+				transConsumed: []string{"1000000", "3000000"},
+			},
+			wantErr: ErrTransactionNotFound,
+		},
+	}
+
+	for name, tcase := range scenarios {
+		tcase := tcase
+		t.Run(name, func(t *testing.T) {
+			repo := setupTransactions(t, tcase.given.data, nil)
+
+			err := repo.RollBackConsumed(tcase.given.ctx, tcase.given.transConsumed)
+
+			if tcase.wantErr == nil {
+				assert.NoError(t, err)
+				for _, tr := range tcase.given.data {
+					result, _ := repo.FindOne(tcase.given.ctx, tr.TransactionId)
+					assert.Equal(t, false, result.IsConsumed)
+				}
+			} else {
+				assert.ErrorIs(t, err, tcase.wantErr)
+			}
+		})
+	}
+}
+
 func TestTransaction_GetBalance(t *testing.T) {
 	time := time.Now()
 	id := "1000"

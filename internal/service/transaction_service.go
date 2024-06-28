@@ -7,12 +7,14 @@ import (
 
 	"github.com/gopay/internal/models"
 	"github.com/gopay/internal/repository"
+	"github.com/gopay/internal/utils"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	ErrInvalidAmount      = errors.New("amount cannot be less or equal to zero")
-	ErrInsufficentBalance = errors.New("insufficient balance")
-	ErrNoTransactions     = errors.New("account has no transactions")
+	ErrInvalidAmount        = errors.New("amount cannot be less or equal to zero")
+	ErrInsufficentBalance   = errors.New("insufficient balance")
+	ErrFailedDebitOperation = errors.New("debit operation  unsuccessful ")
 )
 
 var nowOriginal = func() time.Time {
@@ -77,7 +79,7 @@ func (r *transactionServiceImpl) Withdraw(ctx context.Context, owner string, amo
 		return err
 	}
 
-	err = r.debit(ctx, owner, owner, amount)
+	consumed, err := r.debit(ctx, owner, owner, amount)
 	if err != nil {
 		return err
 	}
@@ -90,54 +92,92 @@ func (r *transactionServiceImpl) Withdraw(ctx context.Context, owner string, amo
 		Receiver:   owner,
 		Amount:     amount,
 	}
-	return r.transactionRepo.Create(ctx, transaction)
-}
 
-func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiver string, amount float32) error {
-	if amount >= 0 {
-		return ErrInvalidAmount
-	}
-
-	var oldest models.Transaction
-	transactions, err := r.transactionRepo.FindAll(ctx, owner)
+	err = r.transactionRepo.Create(ctx, transaction)
 	if err != nil {
-		return err
-	}
-
-	if len(transactions) == 0 {
-		return ErrNoTransactions
-	}
-
-	var balance float64
-	for _, t := range transactions {
-		if t.Owner == owner && !t.IsConsumed {
-			balance += float64(t.Amount)
-			if (models.Transaction{} == oldest) || t.CreatedAt.Before(oldest.CreatedAt) {
-				oldest = t
-			}
-		}
-	}
-
-	if (balance + float64(amount)) < 0 {
-		return ErrInsufficentBalance
-	}
-
-	err = r.transactionRepo.MarkAsConsumed(ctx, oldest.TransactionId)
-	if err != nil {
-		return err
-	}
-
-	if (oldest.Amount + amount) != 0 {
-		transaction := models.Transaction{
-			CreatedAt:  clockNow(),
-			IsConsumed: false,
-			Owner:      owner,
-			Sender:     owner,
-			Receiver:   receiver,
-			Amount:     oldest.Amount + amount,
-		}
-		return r.transactionRepo.Create(ctx, transaction)
+		go func() {
+			err := utils.Retry(func() error {
+				return r.transactionRepo.RollBackConsumed(ctx, consumed)
+			}, "rollback of MarkAsConsumed")
+			log.Error().Err(err)
+		}()
+		log.Error().Err(err)
+		return ErrFailedDebitOperation
 	}
 
 	return nil
+}
+
+func (r *transactionServiceImpl) debit(ctx context.Context, owner string, receiver string, amount float32) ([]string, error) {
+	if amount >= 0 {
+		return []string{}, ErrInvalidAmount
+	}
+
+	balance, err := r.transactionRepo.GetBalance(ctx, owner)
+	if err != nil {
+		return []string{}, err
+	}
+
+	if (balance.Amount + float64(amount)) < 0 {
+		return []string{}, ErrInsufficentBalance
+	}
+
+	transactions, err := r.transactionRepo.FindAll(ctx, owner)
+	if err != nil {
+		return []string{}, err
+	}
+
+	debit := (-1) * amount
+	transConsumed := []string{}
+	for _, t := range transactions {
+		err = r.transactionRepo.MarkAsConsumed(ctx, t.TransactionId)
+		if err != nil {
+			utils.Go(func() {
+				err := utils.Retry(func() error {
+					return r.transactionRepo.RollBackConsumed(ctx, transConsumed)
+				}, "rollback of MarkAsConsumed")
+				log.Error().Err(err)
+			})
+			log.Error().Err(err)
+			return []string{}, ErrFailedDebitOperation
+		}
+
+		transConsumed = append(transConsumed, t.TransactionId)
+		remaining := t.Amount - debit
+
+		if remaining == 0 {
+			break
+		}
+
+		if remaining < 0 {
+			debit = debit - t.Amount
+			continue
+		}
+
+		if remaining > 0 {
+			transaction := models.Transaction{
+				CreatedAt:  clockNow(),
+				IsConsumed: false,
+				Owner:      owner,
+				Sender:     owner,
+				Receiver:   receiver,
+				Amount:     t.Amount - debit,
+			}
+			err = r.transactionRepo.Create(ctx, transaction)
+			if err != nil {
+				go func() {
+					err := utils.Retry(func() error {
+						return r.transactionRepo.RollBackConsumed(ctx, transConsumed)
+					}, "rollback of MarkAsConsumed")
+					log.Error().Err(err)
+				}()
+				log.Error().Err(err)
+				return []string{}, ErrFailedDebitOperation
+			}
+
+			break
+		}
+	}
+
+	return transConsumed, nil
 }

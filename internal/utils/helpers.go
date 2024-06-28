@@ -2,12 +2,19 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/gopay/internal/models"
+	"github.com/rs/zerolog/log"
+)
+
+var (
+	ErrMaxAttemps = errors.New("operation failed after maximum attempts")
+	ErrNotAFunc   = errors.New("fn must be a function")
 )
 
 func ErrorWithMessage(w http.ResponseWriter, status int, message string) {
@@ -27,6 +34,24 @@ func WithPayload(w http.ResponseWriter, status int, payload []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(payload)
+}
+
+func Retry(fn func() error, op string) error {
+	const maxAttempts = 5
+	const delay = 2 * time.Second
+
+	log.Info().Msgf("Operation %v failed. Retrying...", op)
+
+	for attempts := 1; attempts <= maxAttempts; attempts++ {
+		err := fn()
+		if err == nil {
+			return nil
+		}
+		log.Info().Msgf("Attempt %d failed: %v. Retrying...\n", attempts, err)
+		time.Sleep(delay)
+	}
+
+	return ErrMaxAttemps
 }
 
 func Deposit(transaction *models.Transaction) bool {
